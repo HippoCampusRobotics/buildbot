@@ -193,7 +193,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         c['change_source'].append(
             changes.GitPoller(
                 repourl=repourl,
-                pollInterval=30,
+                pollInterval=300,
                 branches=['main'],
             )
         )
