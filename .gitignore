@@ -1,0 +1,13 @@
+**/COLCON_IGNORE
+*.pyc
+**/__pycache__/
+*.swp
+**/venv/
+*.idea/
+twistd.log*
+*.log
+state.sqlite
+binarydebs/
+gitpoller-work
+**/secrets/*
+!**/secrets/.keep_me

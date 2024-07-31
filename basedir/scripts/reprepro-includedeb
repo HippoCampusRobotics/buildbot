@@ -1,0 +1,34 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export REPO_DIR="/usr/share/nginx/packages/ubuntu"
+export BUILD_DIR=`readlink -f ${SCRIPT_DIR}/..`
+
+if [[ ${#} -lt 4 ]]; then
+    echo "Usage: ${0} <pkg_name> <name.deb> <distro> <arch>"
+    exit -1
+fi
+export PKG=${1}
+export NAME=${2}
+export DISTRO=${3}
+export ARCH=${4}
+
+/usr/lib/gnupg/gpg-preset-passphrase -c 94D2D937915E5F8A3AFB0AF150FEBAC4AF7B2C32 < "$HOME/gpg-secret"
+
+# invalidate this package
+echo "running reprepro -V -b $REPO_DIR removefilter $DISTRO \"Package (==$PKG), Architecture (==$ARCH)\""
+reprepro -V -b $REPO_DIR removefilter $DISTRO "Package (==$PKG), Architecture (==$ARCH)"
+
+reprepro -V -b $REPO_DIR deleteunreferenced
+
+reprepro -V -b $REPO_DIR includedeb $DISTRO $BUILD_DIR/binarydebs/$NAME
+
+reprepro -V -b $REPO_DIR export
+
+find $REPO_DIR -type d -exec chmod 755 {} +
+find $REPO_DIR -type f -exec chmod 644 {} +
+
+echo RELOADAGENT | gpg-connect-agent
+
+sleep 5
