@@ -212,7 +212,17 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         )
 
     c['schedulers'].append(
-        schedulers.ForceScheduler(name='force', builderNames=builders)
+        schedulers.ForceScheduler(
+            name='force',
+            builderNames=builders,
+            properties=[
+                util.BooleanParameter(
+                    name='is_full_build',
+                    label='Build this package and all after that',
+                    default=False,
+                )
+            ],
+        )
     )
     c['schedulers'].append(
         schedulers.Nightly(
