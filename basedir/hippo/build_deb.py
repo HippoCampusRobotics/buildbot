@@ -123,18 +123,21 @@ def create_deb_factory(
             and step.build.getProperty('is_triggered')
         )
 
-    if triggers:
-        factory.addStep(
-            steps.Trigger(
-                schedulerNames=[
-                    f'{x.replace("_", "-")}-triggerable-{arch}'
-                    for x in triggers
-                ],
-                set_properties={'is_triggered': True},
-                doStepIf=should_trigger,
-                waitForFinish=False,
-            )
-        )
+    # do not trigger anything for now, since this massively increases
+    # the amount of useless rebuilds
+
+    # if triggers:
+    #     factory.addStep(
+    #         steps.Trigger(
+    #             schedulerNames=[
+    #                 f'{x.replace("_", "-")}-triggerable-{arch}'
+    #                 for x in triggers
+    #             ],
+    #             set_properties={'is_triggered': True},
+    #             doStepIf=should_trigger,
+    #             waitForFinish=False,
+    #         )
+    #     )
     return factory
 
 
