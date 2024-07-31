@@ -118,32 +118,32 @@ def create_deb_factory(
         factory.addStep(build_step)
 
     def should_trigger(step):
-        return not (
-            step.build.hasProperty('is_triggered')
-            and step.build.getProperty('is_triggered')
-        )
+        return step.build.hasProperty(
+            'is_full_build'
+        ) and step.build.getProperty('is_full_build')
 
     # do not trigger anything for now, since this massively increases
     # the amount of useless rebuilds
 
-    # if triggers:
-    #     factory.addStep(
-    #         steps.Trigger(
-    #             schedulerNames=[
-    #                 f'{x.replace("_", "-")}-triggerable-{arch}'
-    #                 for x in triggers
-    #             ],
-    #             set_properties={'is_triggered': True},
-    #             doStepIf=should_trigger,
-    #             waitForFinish=False,
-    #         )
-    #     )
+    if triggers:
+        factory.addStep(
+            steps.Trigger(
+                schedulerNames=[
+                    f'{x.replace("_", "-")}-triggerable-{arch}'
+                    for x in triggers
+                ],
+                set_properties={'is_triggered': True, 'is_full_build': True},
+                doStepIf=should_trigger,
+                waitForFinish=False,
+            )
+        )
     return factory
 
 
 def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
     builders = []
-    for repo in repos:
+
+    for i_repo, repo in enumerate(repos):
         repo_name = repo['name'].replace('_', '-')
         main_branch_scheduler_name = f'{repo_name}-main-branch-scheduler'
         dependent_deb_scheduler_name = f'{repo_name}-dependent-scheduler'
@@ -158,8 +158,14 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             repourl = (
                 f'https://github.com/HippoCampusRobotics/{repo["name"]}.git'
             )
+            try:
+                next_repo = [repos[i_repo + 1]['name']]
+            except IndexError:
+                next_repo = None
+            except KeyError:
+                next_repo = None
             deb_factory = create_deb_factory(
-                repo['name'], repourl, repo['name'], repo['dependents'], arch
+                repo['name'], repourl, repo['name'], next_repo, arch
             )
             colcon_factory = test_build.build_factory(
                 repo['name'], repourl, repo['name']
@@ -211,6 +217,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
     c['schedulers'].append(
         schedulers.Nightly(
             name='nightly-deb-amd64',
+            properties={'is_full_build': True},
             hour=22,
             minute=3,
             builderNames=[name for name in builders if 'deb-amd64' in name],
@@ -220,6 +227,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
     c['schedulers'].append(
         schedulers.Nightly(
             name='nightly-deb-arm64',
+            properties={'is_full_build': True},
             hour=1,
             minute=21,
             builderNames=[name for name in builders if 'deb-arm64' in name],
