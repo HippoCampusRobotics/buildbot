@@ -116,6 +116,13 @@ def create_deb_factory(
     ]
     for build_step in build_steps:
         factory.addStep(build_step)
+
+    def should_trigger(step):
+        return not (
+            step.build.hasProperty('is_triggered')
+            and step.build.getProperty('is_triggered')
+        )
+
     if triggers:
         factory.addStep(
             steps.Trigger(
@@ -123,6 +130,8 @@ def create_deb_factory(
                     f'{x.replace("_", "-")}-triggerable-{arch}'
                     for x in triggers
                 ],
+                set_properties={'is_triggered': True},
+                doStepIf=should_trigger,
                 waitForFinish=False,
             )
         )
