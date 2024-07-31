@@ -180,7 +180,9 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             name=main_branch_scheduler_name,
             treeStableTimer=10,
             builderNames=colcon_builders,
-            change_filter=util.ChangeFilter(repository=repourl, branch='main'),
+            change_filter=util.ChangeFilter(
+                repository=repourl.removesuffix('.git'), branch='main'
+            ),
         )
         c['schedulers'].append(main_branch_scheduler)
         c['schedulers'].append(
@@ -188,13 +190,6 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
                 name=dependent_deb_scheduler_name,
                 builderNames=deb_builders,
                 upstream=main_branch_scheduler,
-            )
-        )
-        c['change_source'].append(
-            changes.GitPoller(
-                repourl=repourl,
-                pollInterval=300,
-                branches=['main'],
             )
         )
 
