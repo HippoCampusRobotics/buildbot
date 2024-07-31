@@ -10,5 +10,6 @@ twistd.log*
 state.sqlite
 binarydebs/
 gitpoller-work
+**/master.cfg.sample
 **/secrets/*
 !**/secrets/.keep_me
