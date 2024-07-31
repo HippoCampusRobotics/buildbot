@@ -5,6 +5,7 @@
 **/venv/
 *.idea/
 twistd.log*
+**/twistd.pid
 *.log
 state.sqlite
 binarydebs/
