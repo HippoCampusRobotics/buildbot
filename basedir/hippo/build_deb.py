@@ -220,7 +220,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             properties={'is_full_build': True},
             hour=22,
             minute=3,
-            builderNames=[name for name in builders if 'deb-amd64' in name],
+            builderNames=[name for name in builders if 'deb-amd64' in name][0],
             change_filter=util.ChangeFilter(branch='main'),
         ),
     )
@@ -230,7 +230,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             properties={'is_full_build': True},
             hour=1,
             minute=21,
-            builderNames=[name for name in builders if 'deb-arm64' in name],
+            builderNames=[name for name in builders if 'deb-arm64' in name][0],
             change_filter=util.ChangeFilter(branch='main'),
         ),
     )
