@@ -10,13 +10,13 @@ case $1 in
         TAG=$1
         ;;
     *)
-        echo "Unknown tag."
+        echo "Unknown tag. <$1>"
         exit 1
         ;;
 esac
 
 echo "Building $IMAGE_NAME for $TAG"
-docker buildx build --build-arg "ROS_DISTRO=$1" ./worker -t $IMAGE_NAME:$TAG
+docker buildx build --pull --build-arg "ROS_DISTRO=$1" ./worker -t $IMAGE_NAME:$TAG
 
 docker tag $IMAGE_NAME:$TAG lennartalff/$IMAGE_NAME:$TAG
 docker push lennartalff/$IMAGE_NAME:$TAG
