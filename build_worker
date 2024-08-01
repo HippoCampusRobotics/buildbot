@@ -16,7 +16,7 @@ case $1 in
 esac
 
 echo "Building $IMAGE_NAME for $TAG"
-docker buildx build --platform linux/amd64,linux/arm64 --build-arg "ROS_DISTRO=$1" ./worker -t $IMAGE_NAME:$TAG
+docker buildx build --build-arg "ROS_DISTRO=$1" ./worker -t $IMAGE_NAME:$TAG
 
 docker tag $IMAGE_NAME:$TAG lennartalff/$IMAGE_NAME:$TAG
 docker push lennartalff/$IMAGE_NAME:$TAG
