@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 
-IMAGE_NAME="hippo-latent-worker"
+
+tmp=$(uname -m)
+case $tmp in
+    aarch64)
+        ARCH=arm64
+        ;;
+    x86_64)
+        ARCH=amd64
+        ;;
+    *)
+        echo "Unhandled architecture: $tmp"
+        exit 1
+        ;;
+esac
 
 case $1 in
     iron)
@@ -15,6 +28,7 @@ case $1 in
         ;;
 esac
 
+IMAGE_NAME="hippo-latent-worker-$ARCH"
 echo "Building $IMAGE_NAME for $TAG"
 docker buildx build --pull --build-arg "ROS_DISTRO=$1" ./worker -t $IMAGE_NAME:$TAG
 
