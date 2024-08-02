@@ -8,6 +8,39 @@ from . import test_build
 from .common import success
 
 
+def parse_version(version: str):
+    try:
+        x = re.search(r'^([0-9]+)\.([0-9]+)\.([0-9]+)$', version)
+    except TypeError as e:
+        raise ValueError(
+            f'Could not parse version of pattern <n.n.n> in "{version}"'
+        ) from e
+    if not x:
+        raise ValueError(
+            f'Could not parse version of pattern <n.n.n> in "{version}"'
+        )
+    return (
+        int(x.group(1)),
+        int(x.group(2)),
+        int(x.group(3)),
+    )
+
+
+def is_version_string(version: str):
+    try:
+        x = re.search(r'^([0-9]+)\.([0-9]+)\.([0-9]+)$', version)
+    except TypeError:
+        return False
+    if not x:
+        return False
+    return True
+
+
+# github webhooks set the branch as version string if a tag was set.
+def filter_release_branch(branch):
+    return is_version_string(branch)
+
+
 def create_deb_factory(
     job_name: str, repourl: str, pkg_name: str, triggers: list[str], arch: str
 ):
@@ -152,7 +185,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
     for i_repo, repo in enumerate(repos):
         repo_name = repo['name'].replace('_', '-')
         main_branch_scheduler_name = f'{repo_name}-main-branch-scheduler'
-        dependent_deb_scheduler_name = f'{repo_name}-dependent-scheduler'
+        release_branch_scheduler_name = f'{repo_name}-release-branch-scheduler'
         colcon_builders = []
         deb_builders = []
         for arch in worker:
@@ -194,7 +227,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             # create the triggerables for arm/amd for each repo name
             c['schedulers'].append(
                 schedulers.Triggerable(
-                    name=triggerable_name, builderNames=[deb_builder_name]
+                    name=triggerable_name, builderNames=[colcon_builder_name]
                 )
             )
             builders.append(deb_builder_name)
@@ -209,13 +242,16 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             ),
         )
         c['schedulers'].append(main_branch_scheduler)
-        c['schedulers'].append(
-            schedulers.Dependent(
-                name=dependent_deb_scheduler_name,
-                builderNames=deb_builders,
-                upstream=main_branch_scheduler,
-            )
+        release_branch_scheduler = schedulers.SingleBranchScheduler(
+            name=release_branch_scheduler_name,
+            treeStableTimer=10,
+            builderNames=deb_builders,
+            change_filter=util.ChangeFilter(
+                repository=repourl.removesuffix('.git'),
+                branch_fn=filter_release_branch,
+            ),
         )
+        c['scheulders'].append(release_branch_scheduler)
 
     c['schedulers'].append(
         schedulers.ForceScheduler(
@@ -229,29 +265,4 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
                 )
             ],
         )
-    )
-
-    c['schedulers'].append(
-        schedulers.Nightly(
-            name='nightly-deb-amd64',
-            properties={'is_full_build': True},
-            hour=22,
-            minute=3,
-            builderNames=[
-                [name for name in builders if 'deb-amd64' in name][0],
-            ],
-            change_filter=util.ChangeFilter(branch='main'),
-        ),
-    )
-    c['schedulers'].append(
-        schedulers.Nightly(
-            name='nightly-deb-arm64',
-            properties={'is_full_build': True},
-            hour=1,
-            minute=21,
-            builderNames=[
-                [name for name in builders if 'deb-arm64' in name][0],
-            ],
-            change_filter=util.ChangeFilter(branch='main'),
-        ),
     )
