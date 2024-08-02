@@ -245,7 +245,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         schedulers.Nightly(
             name='nightly-deb-amd64',
             properties={'is_full_build': True},
-            codebase={'main': {'branch': 'main', 'revision': None}},
+            codebases={'main': {'branch': 'main', 'revision': None}},
             hour=22,
             minute=3,
             builderNames=[
