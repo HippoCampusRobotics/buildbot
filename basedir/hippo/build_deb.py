@@ -251,7 +251,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
                 branch_fn=filter_release_branch,
             ),
         )
-        c['scheulders'].append(release_branch_scheduler)
+        c['schedulers'].append(release_branch_scheduler)
 
     c['schedulers'].append(
         schedulers.ForceScheduler(
