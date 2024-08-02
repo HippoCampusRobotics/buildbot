@@ -1,3 +1,4 @@
-buildbot[bundle] == 4.0.1
-buildbot-badges == 4.0.1
+buildbot[bundle] == 4.0.2
+buildbot-badges == 4.0.2
 paramiko
+requests
