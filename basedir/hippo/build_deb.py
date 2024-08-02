@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 
 from buildbot.plugins import changes, schedulers, steps, util
+from buildbot.process import results
 
 from . import test_build
 from .common import success
@@ -37,6 +38,21 @@ def create_deb_factory(
             return {'arch': 'arm64'}
         else:
             return {'arch': 'unknown'}
+
+    def do_step_if_new(step):
+        current_status = step.build.build_status
+        current_revision = current_status.getProperty('revision')
+        status = current_status
+        while (status := status.getPreviousBuild()) is not None:
+            if (
+                status.getResults() == results.SUCCESS
+                and status.getProperty('revision') == current_revision
+            ):
+                # we found a previous build that was identical to the current
+                # one.
+                # no need to redo, since it already was succesfull
+                return False
+        return True
 
     # checkout
     build_steps = [
@@ -135,6 +151,7 @@ def create_deb_factory(
                 set_properties={'is_triggered': True, 'is_full_build': True},
                 doStepIf=should_trigger,
                 waitForFinish=False,
+                updateSourceStamp=True,
             )
         )
     return factory
@@ -228,6 +245,7 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         schedulers.Nightly(
             name='nightly-deb-amd64',
             properties={'is_full_build': True},
+            codebase={'main': {'branch': 'main', 'revision': None}},
             hour=22,
             minute=3,
             builderNames=[
