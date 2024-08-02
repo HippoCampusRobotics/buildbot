@@ -40,18 +40,7 @@ def create_deb_factory(
             return {'arch': 'unknown'}
 
     def do_step_if_new(step):
-        current_status = step.build.build_status
-        current_revision = current_status.getProperty('revision')
-        status = current_status
-        while (status := status.getPreviousBuild()) is not None:
-            if (
-                status.getResults() == results.SUCCESS
-                and status.getProperty('revision') == current_revision
-            ):
-                # we found a previous build that was identical to the current
-                # one.
-                # no need to redo, since it already was succesfull
-                return False
+        # TODO: find out how to implement
         return True
 
     # checkout
@@ -246,13 +235,6 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         schedulers.Nightly(
             name='nightly-deb-amd64',
             properties={'is_full_build': True},
-            codebases={
-                'main': {
-                    'repository': repos[0]['repo_url'],
-                    'branch': 'main',
-                    'revision': None,  # choose most recent
-                }
-            },
             hour=22,
             minute=3,
             builderNames=[
@@ -265,13 +247,6 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         schedulers.Nightly(
             name='nightly-deb-arm64',
             properties={'is_full_build': True},
-            codebases={
-                'main': {
-                    'repository': repos[0]['repo_url'],
-                    'branch': 'main',
-                    'revision': None,  # choose most recent
-                }
-            },
             hour=1,
             minute=21,
             builderNames=[
