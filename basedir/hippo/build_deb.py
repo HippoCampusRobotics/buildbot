@@ -241,11 +241,18 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
             ],
         )
     )
+
     c['schedulers'].append(
         schedulers.Nightly(
             name='nightly-deb-amd64',
             properties={'is_full_build': True},
-            codebases={'main': {'branch': 'main', 'revision': None}},
+            codebases={
+                'main': {
+                    'repository': repos[0]['repo_url'],
+                    'branch': 'main',
+                    'revision': None,  # choose most recent
+                }
+            },
             hour=22,
             minute=3,
             builderNames=[
@@ -258,6 +265,13 @@ def deb_jobs(c, repos: list[str], worker: dict[str, list[str]]):
         schedulers.Nightly(
             name='nightly-deb-arm64',
             properties={'is_full_build': True},
+            codebases={
+                'main': {
+                    'repository': repos[0]['repo_url'],
+                    'branch': 'main',
+                    'revision': None,  # choose most recent
+                }
+            },
             hour=1,
             minute=21,
             builderNames=[
