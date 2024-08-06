@@ -2,3 +2,4 @@ buildbot[bundle] == 4.0.2
 buildbot-badges == 4.0.2
 paramiko
 requests
+treq
