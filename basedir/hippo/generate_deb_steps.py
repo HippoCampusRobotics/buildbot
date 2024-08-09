@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 from buildbot.plugins import steps, util
-from buildbot.process import buildstep
+from buildbot.process import buildstep, logobserver
 from twisted.internet import defer
 
 from hippo.common import success
@@ -12,6 +12,8 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
     def __init__(self, job_name, master_lock, **kwargs):
         kwargs = self.setupShellMixin(kwargs, prohibitArgs=['command'])
         super().__init__(**kwargs)
+        self.observer = logobserver.BufferLogObserver()
+        self.addLogObserver('stdio', self.observer)
         self.job_name = job_name
         self.master_lock = master_lock
 
@@ -32,7 +34,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
         result = cmd.results()
         if result != util.SUCCESS:
             return result
-        pkgs = self.extract_packages(cmd.stdout)
+        pkgs = self.extract_packages(self.observer.getStdout())
         keys_to_skip = ','.join(pkg['name'] for pkg in pkgs)
         for pkg in pkgs:
             name = pkg['name']
