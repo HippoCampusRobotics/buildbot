@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 from buildbot.plugins import steps, util
-from buildbot.process import buildstep, logobserver
+from buildbot.process import buildstep
 from twisted.internet import defer
 
 from hippo.common import success
@@ -12,8 +12,6 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
     def __init__(self, job_name, master_lock, **kwargs):
         kwargs = self.setupShellMixin(kwargs, prohibitArgs=['command'])
         super().__init__(**kwargs)
-        self.observer = logobserver.BufferLogObserver()
-        self.addLogObserver('stdio', self.observer)
         self.job_name = job_name
         self.master_lock = master_lock
 
@@ -34,13 +32,14 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
         result = cmd.results()
         if result != util.SUCCESS:
             return result
-        pkgs = self.extract_packages(self.observer.getStdout())
+        pkgs = self.extract_packages(cmd.stdout)
         keys_to_skip = ','.join(pkg['name'] for pkg in pkgs)
+        build_steps = []
         for pkg in pkgs:
             name = pkg['name']
             path = pkg['path']
             workdir = f'build/{path}'
-            self.build.addStepsAfterCurrentStep(
+            build_steps.extend(
                 [
                     steps.ShellCommand(
                         name=f'{self.job_name}-rosdep-install',
@@ -102,7 +101,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             files = [line.strip() for line in stdout.splitlines()]
             return {'debnames': files}
 
-        self.build.addStepsAfterCurrentStep(
+        build_steps.extend(
             [
                 steps.SetPropertyFromCommand(
                     command=r"find . -name '*.deb'",
@@ -141,7 +140,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             return command
 
         for i in range(len(pkgs)):
-            self.build.addStepsAfterCurrentStep(
+            build_steps.extend(
                 [
                     steps.MasterShellCommand(
                         name=f'{self.job_name}-includedeb-{i}',
@@ -150,4 +149,5 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
                     )
                 ]
             )
+        self.build.addStepsAfterCurrentStep(build_steps)
         return cmd.results()
