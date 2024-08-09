@@ -87,7 +87,13 @@ def create_deb_factory(
             submodules=True,
             haltOnFailure=True,
         ),
-        GenerateDebSteps(job_name, lock),
+        GenerateDebSteps(
+            job_name,
+            lock,
+            name='generate-buildsteps',
+            haltOnFailure=True,
+            hideStepIf=success,
+        ),
     ]
     for build_step in build_steps:
         factory.addStep(build_step)

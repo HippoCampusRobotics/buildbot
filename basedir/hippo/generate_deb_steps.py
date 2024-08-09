@@ -38,22 +38,32 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
         build_steps.extend(
             [
                 steps.FileDownload(
+                    name='download-install-script',
                     mastersrc='scripts/install_deb',
                     workerdest=util.Interpolate(
                         '%(prop:builddir)s/build/install_deb'
                     ),
                     mode=0o755,
                     haltOnFailure=True,
+                    hideStepIf=success,
                 ),
                 steps.FileDownload(
+                    name='download-move-deb-script',
                     mastersrc='scripts/move_deb_to_builddir',
                     workerdest=util.Interpolate(
                         '%(prop:builddir)s/build/move_deb_to_builddir'
                     ),
                     mode=0o755,
                     haltOnFailure=True,
+                    hideStepIf=success,
                 ),
             ]
+        )
+        build_steps.append(
+            steps.SetProperty(
+                property='generate_steps_for',
+                value=pkgs,
+            )
         )
         for pkg in pkgs:
             name = pkg['name']
@@ -62,7 +72,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             build_steps.extend(
                 [
                     steps.ShellCommand(
-                        name=f'{self.job_name}-rosdep-install',
+                        name=f'rosdep-install-{name}',
                         command=[
                             'rosdep',
                             'install',
@@ -76,7 +86,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
                         hideStepIf=success,
                     ),
                     steps.ShellCommand(
-                        name=f'{self.job_name}-bloom-generate',
+                        name=f'bloom-generate-{name}',
                         command=[
                             'bloom-generate',
                             'rosdebian',
@@ -85,18 +95,18 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
                         workdir=workdir,
                     ),
                     steps.ShellCommand(
-                        name=f'{self.job_name}-generate-deb',
+                        name=f'generate-deb-{name}',
                         command=['fakeroot', 'debian/rules', 'binary'],
                         haltOnFailure=True,
                         workdir=workdir,
                     ),
                     steps.ShellCommand(
-                        name=f'{self.job_name}-install-deb',
+                        name=f'install-deb-{name}',
                         command=['./install_deb', name, path],
                         haltOnFailure=True,
                     ),
                     steps.ShellCommand(
-                        name=f'{self.job_name}-move-deb',
+                        name=f'move-deb-{name}',
                         command=['./move_deb_to_builddir', name, path],
                         haltOnFailure=True,
                     ),
@@ -114,16 +124,21 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
         build_steps.extend(
             [
                 steps.SetPropertyFromCommand(
+                    name='set-debfiles',
                     command=r"find . -name '*.deb'",
                     extract_fn=extract_deb_files,
                     haltOnFailure=True,
+                    hideStepIf=success,
                 ),
                 steps.SetPropertyFromCommand(
+                    name='set-debnames',
                     command=r"find . -name '*.deb' -exec basename {} \;",
                     extract_fn=extract_deb_names,
                     haltOnFailure=True,
+                    hideStepIf=success,
                 ),
                 steps.MultipleFileUpload(
+                    name='upload-debfiles',
                     workersrcs=util.Property('debfiles'),
                     masterdest='binarydebs/',
                     haltOnFailure=True,
@@ -149,11 +164,17 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             ]
             return command
 
+        @util.renderer
+        def interpolate_stepname(props, i):
+            debnames = props.getProperty('debnames')
+            filename = debnames[i]
+            return f'includedeb-{filename}'
+
         for i in range(len(pkgs)):
             build_steps.extend(
                 [
                     steps.MasterShellCommand(
-                        name=f'{self.job_name}-includedeb-{i}',
+                        name=interpolate_stepname.withArgs(int(i)),
                         command=make_includedeb_command.withArgs(int(i)),
                         locks=[self.master_lock.access('exclusive')],
                     )
