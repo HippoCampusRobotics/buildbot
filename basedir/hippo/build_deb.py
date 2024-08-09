@@ -5,6 +5,7 @@ from buildbot.plugins import changes, schedulers, steps, util
 from buildbot.process import results
 
 from . import test_build
+from .generate_deb_steps import GenerateDebSteps
 from .common import success
 
 
@@ -47,23 +48,6 @@ def create_deb_factory(
     factory = util.BuildFactory()
     lock = util.MasterLock('reprepro')
 
-    @util.renderer
-    def make_includedeb_command(props):
-        filename = props.getProperty('debfile')
-        basename = Path(filename).stem
-        deb_pkg, ver_and_code, arch = basename.split('_')
-        distro = deb_pkg.split('-')[1]  # noqa: F841
-        m = re.search(r'[a-zA-Z]+', ver_and_code)
-        code = m.group(0)
-        command = [
-            './scripts/reprepro-includedeb',
-            deb_pkg,
-            filename,
-            code,
-            arch,
-        ]
-        return command
-
     def uname_to_arch(rc, stdout, stderr):
         if 'x86_64' in stdout:
             return {'arch': 'amd64'}
@@ -103,54 +87,7 @@ def create_deb_factory(
             submodules=True,
             haltOnFailure=True,
         ),
-        steps.ShellCommand(
-            name=f'{job_name}-rosdep-install',
-            command=[
-                'rosdep',
-                'install',
-                '--from-paths',
-                '.',
-                '-y',
-            ],
-            haltOnFailure=True,
-            hideStepIf=success,
-        ),
-        steps.ShellCommand(
-            name=f'{job_name}-bloom-generate',
-            command=[
-                'bloom-generate',
-                'rosdebian',
-            ],
-            haltOnFailure=True,
-        ),
-        steps.ShellCommand(
-            name=f'{job_name}-generate-deb',
-            command=['fakeroot', 'debian/rules', 'binary'],
-            haltOnFailure=True,
-        ),
-        steps.SetPropertyFromCommand(
-            command=r"find .. -name '*.deb' -exec basename {} \;",
-            property='debfile',
-            haltOnFailure=True,
-        ),
-        steps.SetPropertyFromCommand(
-            command="find .. -name '*.deb'",
-            property='debpath',
-            haltOnFailure=True,
-            hideStepIf=success,
-        ),
-        steps.FileUpload(
-            name=f'{job_name}-upload-deb',
-            workersrc=util.Interpolate('%(prop:debpath)s'),
-            masterdest=util.Interpolate('binarydebs/%(prop:debfile)s'),
-            haltOnFailure=True,
-        ),
-        steps.MasterShellCommand(
-            name=f'{job_name}-includedeb',
-            command=make_includedeb_command,
-            haltOnFailure=True,
-            locks=[lock.access('exclusive')],
-        ),
+        GenerateDebSteps(job_name, lock),
     ]
     for build_step in build_steps:
         factory.addStep(build_step)

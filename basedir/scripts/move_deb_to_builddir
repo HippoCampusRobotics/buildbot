@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+
+import argparse
+import glob
+import os
+import shutil
+from pathlib import Path
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    ros_distro = os.getenv('ROS_DISTRO')
+    if not ros_distro:
+        raise ValueError('Environment variable "ROS_DISTRO" not set!')
+    parser.add_argument('package_name')
+    parser.add_argument('package_path')
+    args = parser.parse_args()
+    # debhelper generate deb pkgs inside the parent directory of the ros pkg
+    pattern = (
+        f'{args.package_path}/../ros-{ros_distro}-'
+        f'{args.package_name.replace('_', '-')}*.deb'
+    )
+    filenames = glob.glob(pattern)
+    name = Path(filenames[0]).name
+    shutil.move(filenames[0], f'./{name}')
+
+
+if __name__ == '__main__':
+    main()
