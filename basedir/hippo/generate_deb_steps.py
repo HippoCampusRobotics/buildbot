@@ -35,6 +35,26 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
         pkgs = self.extract_packages(cmd.stdout)
         keys_to_skip = ','.join(pkg['name'] for pkg in pkgs)
         build_steps = []
+        build_steps.extend(
+            [
+                steps.FileDownload(
+                    mastersrc='scripts/install_deb',
+                    workerdest=util.Interpolate(
+                        '%(prop:builddir)s/build/install_deb'
+                    ),
+                    mode=0o755,
+                    haltOnFailure=True,
+                ),
+                steps.FileDownload(
+                    mastersrc='scripts/move_deb_to_builddir',
+                    workerdest=util.Interpolate(
+                        '%(prop:builddir)s/build/move_deb_to_builddir'
+                    ),
+                    mode=0o755,
+                    haltOnFailure=True,
+                ),
+            ]
+        )
         for pkg in pkgs:
             name = pkg['name']
             path = pkg['path']
@@ -70,19 +90,9 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
                         haltOnFailure=True,
                         workdir=workdir,
                     ),
-                    steps.FileDownload(
-                        mastersrc='scripts/install_deb',
-                        workerdest='install_deb',
-                        haltOnFailure=True,
-                    ),
                     steps.ShellCommand(
                         name=f'{self.job_name}-install-deb',
                         command=['./install_deb', name, path],
-                        haltOnFailure=True,
-                    ),
-                    steps.FileDownload(
-                        mastersrc='scripts/move_deb_to_builddir',
-                        workerdest='install_deb',
                         haltOnFailure=True,
                     ),
                     steps.ShellCommand(
