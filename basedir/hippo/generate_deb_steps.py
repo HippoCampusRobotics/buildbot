@@ -120,7 +120,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             ]
         )
 
-        # util.renderer
+        @util.renderer
         def make_includedeb_command(props, i):
             debnames = props.getProperty('debnames')
             filename = debnames[i]
