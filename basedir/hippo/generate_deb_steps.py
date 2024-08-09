@@ -100,7 +100,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             files = [line.strip() for line in stdout.splitlines()]
             return {'debnames': files}
 
-        self.build.addBuildStepsAfterCurrent(
+        self.build.addStepsAfterCurrentStep(
             [
                 steps.SetPropertyFromCommand(
                     command=r"find . -name '*.deb'",
@@ -139,7 +139,7 @@ class GenerateDebSteps(buildstep.ShellMixin, steps.BuildStep):
             return command
 
         for i in range(len(pkgs)):
-            self.build.addBuildStepsAfterCurrent(
+            self.build.addStepsAfterCurrentStep(
                 [
                     steps.MasterShellCommand(
                         name=f'{self.job_name}-includedeb-{i}',
