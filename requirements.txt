@@ -1,5 +1,7 @@
-buildbot[bundle] == 4.0.2
-buildbot-badges == 4.0.2
+buildbot[bundle] == 4.2.1
+buildbot-badges == 4.2.1
 paramiko
 requests
 treq
+docker
+colcon-common-extensions
