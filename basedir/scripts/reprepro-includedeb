@@ -14,7 +14,7 @@ export NAME=${2}
 export DISTRO=${3}
 export ARCH=${4}
 
-/usr/lib/gnupg/gpg-preset-passphrase -c 94D2D937915E5F8A3AFB0AF150FEBAC4AF7B2C32 < "$HOME/gpg-secret"
+/usr/lib/gnupg/gpg-preset-passphrase -c 4B1DC61AB3D118C638C4706FD0A0D3A26FCB1355 < "$HOME/gpg-secret"
 
 # invalidate this package
 echo "running reprepro -V -b $REPO_DIR removefilter $DISTRO \"Package (==$PKG), Architecture (==$ARCH)\""
